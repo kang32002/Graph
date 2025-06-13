@@ -158,3 +158,34 @@ if uploaded_file:
         )
     else:
         st.info("y축으로 사용할 데이터를 하나 이상 선택해주세요.")
+import os
+
+st.subheader("4️⃣ 📬 분석 의견을 남겨주세요")
+opinion_file = "opinions.csv"
+
+user_opinion = st.text_area("여기에 분석 의견을 입력하세요. (예: 상관관계 해석, 데이터 특이사항 등)", height=100)
+submit_button = st.button("✏️ 의견 등록")
+
+if submit_button and user_opinion.strip():
+    from datetime import datetime
+    new_entry = pd.DataFrame([{
+        "작성시간": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "의견": user_opinion.strip()
+    }])
+
+    if os.path.exists(opinion_file):
+        old_data = pd.read_csv(opinion_file)
+        all_data = pd.concat([old_data, new_entry], ignore_index=True)
+    else:
+        all_data = new_entry
+
+    all_data.to_csv(opinion_file, index=False)
+    st.success("의견이 성공적으로 등록되었습니다!")
+
+# 저장된 의견 보여주기
+if os.path.exists(opinion_file):
+    st.markdown("### 💬 등록된 다른 사람들의 의견")
+    opinion_data = pd.read_csv(opinion_file)
+    st.dataframe(opinion_data[::-1], use_container_width=True)  # 최신순으로 보여주기
+else:
+    st.info("아직 등록된 의견이 없습니다.")
