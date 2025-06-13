@@ -1,10 +1,10 @@
+import os
 import pandas as pd
 import streamlit as st
 import plotly.graph_objects as go
 from scipy.stats import linregress
-import os
 
-# 스타일 정의
+# 스타일
 st.markdown("""
     <style>
     .main .block-container {
@@ -48,10 +48,9 @@ if uploaded_file:
         columns_per_row = 2
         rows = (len(y_candidates) + columns_per_row - 1) // columns_per_row
         padded_cols = y_candidates + [""] * (rows * columns_per_row - len(y_candidates))
-        grid = [padded_cols[i * columns_per_row:(i + 1) * columns_per_row] for i in range(rows)]
+        grid = [padded_cols[i*columns_per_row:(i+1)*columns_per_row] for i in range(rows)]
 
         checkbox_cols = st.columns(columns_per_row)
-
         for row in grid:
             for col_idx, col in enumerate(row):
                 if col:
@@ -159,7 +158,7 @@ if uploaded_file:
     else:
         st.info("y축으로 사용할 데이터를 하나 이상 선택해주세요.")
 
-# 의견 입력 및 저장
+# 의견 기능 시작
 st.subheader("4️⃣ 📬 분석 의견을 남겨주세요")
 opinion_file = "opinions.csv"
 
@@ -178,19 +177,17 @@ if submit_button and user_name.strip() and user_opinion.strip():
         "이름": user_name.strip(),
         "의견": user_opinion.strip()
     }])
-
     if os.path.exists(opinion_file):
         old_data = pd.read_csv(opinion_file)
         all_data = pd.concat([old_data, new_entry], ignore_index=True)
     else:
         all_data = new_entry
-
     all_data.to_csv(opinion_file, index=False)
     st.success("의견이 성공적으로 등록되었습니다!")
 elif submit_button:
     st.warning("이름과 의견을 모두 입력해주세요.")
 
-# 의견 목록 및 삭제 기능
+# 의견 보여주기 + 삭제 확인
 if os.path.exists(opinion_file):
     st.markdown("### 💬 등록된 의견 (최신순)")
     opinion_data = pd.read_csv(opinion_file)
@@ -205,19 +202,19 @@ if os.path.exists(opinion_file):
             st.markdown(f"> {row['의견']}")
 
             if st.session_state.pending_delete_index == i:
-                st.warning("정말로 삭제할까요?")
-                col_confirm, col_cancel = st.columns(2)
-                with col_confirm:
+                col_del1, col_del2 = st.columns([1, 2])
+                with col_del1:
                     if st.button("✅ 예, 삭제", key=f"confirm_{i}"):
                         opinion_data.drop(i, inplace=True)
                         opinion_data[::-1].to_csv(opinion_file, index=False)
-                        st.success("의견이 삭제되었습니다.")
                         st.session_state.pending_delete_index = None
-                        st.experimental_rerun()
-                with col_cancel:
+                        st.success("의견이 삭제되었습니다.")
+                        st.rerun()
+                with col_del2:
                     if st.button("❌ 취소", key=f"cancel_{i}"):
                         st.session_state.pending_delete_index = None
-                        st.experimental_rerun()
+                        st.rerun()
             else:
                 if st.button("🗑️ 삭제", key=f"delete_{i}"):
                     st.session_state.pending_delete_index = i
+                    st.rerun()
