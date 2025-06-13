@@ -2,7 +2,6 @@ import pandas as pd
 import streamlit as st
 import plotly.graph_objects as go
 from scipy.stats import linregress
-import numpy as np
 
 # 스타일: 전체 영역을 가운데 3/5로 제한 + 입력창/체크박스 개선
 st.markdown("""
@@ -44,17 +43,14 @@ if uploaded_file:
         st.markdown("✔️ y축에 사용할 열을 선택 (최대 2개)")
         y_selected = []
         y_candidates = [col for col in df.columns if col != x_col]
-        
-        columns_per_row = 3
-        rows_per_col = 5
-        total_slots = columns_per_row * rows_per_col
-        
-        # 행 우선 순서로 3열 5행 grid 생성 (빈칸으로 패딩)
-        padded_cols = y_candidates + [""] * (total_slots - len(y_candidates))
-        grid = [padded_cols[i*columns_per_row:(i+1)*columns_per_row] for i in range(rows_per_col)]
-        
+
+        columns_per_row = 2  # 2열로 변경
+        rows = (len(y_candidates) + columns_per_row - 1) // columns_per_row
+        padded_cols = y_candidates + [""] * (rows * columns_per_row - len(y_candidates))
+        grid = [padded_cols[i*columns_per_row:(i+1)*columns_per_row] for i in range(rows)]
+
         checkbox_cols = st.columns(columns_per_row)
-        
+
         for row in grid:
             for col_idx, col in enumerate(row):
                 if col:
@@ -109,20 +105,17 @@ if uploaded_file:
                 ))
 
                 if chart_type == "산점도" and show_regression and i == 0:
-                    # 결측치 제거 및 분산 체크
-                    valid_mask = df[[x_col, col]].dropna()
-                    x_vals = valid_mask[x_col]
-                    y_vals = valid_mask[col]
-                    
-                    if len(x_vals) > 1 and np.std(x_vals) > 0 and np.std(y_vals) > 0:
-                        slope, intercept, r_value, p_value, std_err = linregress(x_vals, y_vals)
-                        reg_line = slope * x_vals + intercept
+                    # 결측치 있는 행 제거 후 회귀선 및 상관계수 계산
+                    valid_data = df[[x_col, col]].dropna()
+                    if len(valid_data) > 1:
+                        slope, intercept, r_value, p_value, std_err = linregress(valid_data[x_col], valid_data[col])
+                        reg_line = slope * valid_data[x_col] + intercept
                         fig.add_trace(go.Scatter(
-                            x=x_vals,
+                            x=valid_data[x_col],
                             y=reg_line,
                             mode="lines",
                             name=f"회귀선 ({col})",
-                            line=dict(color="#003366", dash="dot"),  # 대비 좋은 진한 파랑
+                            line=dict(color="#003366", dash="dot"),  # 진한 파란색으로 변경
                             hoverinfo="skip"
                         ))
                         fig.add_annotation(
@@ -136,8 +129,6 @@ if uploaded_file:
                             borderwidth=1,
                             borderpad=6
                         )
-                    else:
-                        st.warning("회귀선을 그리기에 적절하지 않은 데이터입니다.")
 
         fig.update_layout(
             title=dict(text=graph_title, x=0.5, y=0.95, font=dict(size=24)),
