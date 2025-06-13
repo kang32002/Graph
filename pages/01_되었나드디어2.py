@@ -2,7 +2,6 @@ import pandas as pd
 import streamlit as st
 import plotly.graph_objects as go
 from scipy.stats import linregress
-import numpy as np  # 추가
 
 # 스타일: 전체 영역을 가운데 3/5로 제한 + 입력창/체크박스 개선
 st.markdown("""
@@ -45,19 +44,23 @@ if uploaded_file:
         y_selected = []
         y_candidates = [col for col in df.columns if col != x_col]
 
-        columns_per_row = 2
-        total_slots = len(y_candidates)
-        
-        # 2열로 행 제한 없이 행 우선으로 나누기
-        col_groups = [y_candidates[i::columns_per_row] for i in range(columns_per_row)]
-        
+        columns_per_row = 2  # 2열로 변경
+        # 행 제한 없이 행 우선으로 2열 배치
+        # 예: y_candidates = [A, B, C, D, E] → 
+        # grid = [
+        #   [A, B],
+        #   [C, D],
+        #   [E, ""]
+        # ]
+        rows = (len(y_candidates) + columns_per_row - 1) // columns_per_row
+        padded_cols = y_candidates + [""] * (rows * columns_per_row - len(y_candidates))
+        grid = [padded_cols[i*columns_per_row:(i+1)*columns_per_row] for i in range(rows)]
+
         checkbox_cols = st.columns(columns_per_row)
-        
-        max_rows = max(len(cg) for cg in col_groups)
-        for row_idx in range(max_rows):
-            for col_idx in range(columns_per_row):
-                if row_idx < len(col_groups[col_idx]):
-                    col = col_groups[col_idx][row_idx]
+
+        for row in grid:
+            for col_idx, col in enumerate(row):
+                if col:
                     if checkbox_cols[col_idx].checkbox(col, key=f"y_{col}"):
                         y_selected.append(col)
 
@@ -84,67 +87,52 @@ if uploaded_file:
         for i, col in enumerate(y_selected):
             yaxis = "y2" if use_dual_y and i == 1 else "y"
             mode = "lines+markers" if chart_type == "꺾은선 그래프" else "markers"
+            color = pastel_colors[i % len(pastel_colors)]
 
             if chart_type == "막대그래프":
                 fig.add_trace(go.Bar(
                     x=df[x_col],
                     y=df[col],
                     name=col,
-                    marker_color=pastel_colors[i % len(pastel_colors)],
+                    marker_color=color,
                     yaxis=yaxis,
                     offsetgroup=str(i),
                     hovertemplate=f"{col}: %{{y}} {extract_unit(col)}<extra></extra>"
                 ))
-            elif chart_type == "산점도":
-                fig.add_trace(go.Scatter(
-                    x=df[x_col],
-                    y=df[col],
-                    mode=mode,
-                    name=col,
-                    marker=dict(color=pastel_colors[i % len(pastel_colors)], size=8, opacity=0.6),
-                    yaxis=yaxis,
-                    hovertemplate=f"{col}: %{{y}} {extract_unit(col)}<extra></extra>"
-                ))
-
-                # 회귀선 추가
-                if show_regression and len(y_selected) == 1:
-                    x_vals = df[x_col].dropna()
-                    y_vals = df[col].dropna()
-                    if x_vals.shape[0] == y_vals.shape[0] and x_vals.shape[0] > 1:
-                        coeffs = np.polyfit(x_vals, y_vals, deg=1)
-                        reg_line = coeffs[0] * x_vals + coeffs[1]
-                        fig.add_trace(go.Scatter(
-                            x=x_vals,
-                            y=reg_line,
-                            mode="lines",
-                            name="회귀선",
-                            line=dict(color="#0044cc", dash="dash")
-                        ))
-
-                # 상관계수 표시 (show_corr → show_regression 변경)
-                if show_regression and len(y_selected) == 1:
-                    corr_val = df[[x_col, col]].corr().iloc[0, 1]
-                    fig.add_annotation(
-                        text=f"상관계수 (r) = {corr_val:.2f}",
-                        xref="paper", yref="paper",
-                        x=0.95, y=0.95, showarrow=False,
-                        font=dict(size=14, color="#222222"),
-                        align="right",
-                        bgcolor="rgba(255, 255, 255, 0.9)",
-                        bordercolor="#999999",
-                        borderwidth=1
-                    )
             else:
                 fig.add_trace(go.Scatter(
                     x=df[x_col],
                     y=df[col],
                     mode=mode,
                     name=col,
-                    marker=dict(color=pastel_colors[i % len(pastel_colors)], size=8),
-                    line=dict(color=pastel_colors[i % len(pastel_colors)], width=2),
+                    marker=dict(color=color, size=8, opacity=0.6 if chart_type == "산점도" else 1),
+                    line=dict(color=color, width=2),
                     yaxis=yaxis,
                     hovertemplate=f"{col}: %{{y}} {extract_unit(col)}<extra></extra>"
                 ))
+
+                if chart_type == "산점도" and show_regression and i == 0:
+                    slope, intercept, r_value, p_value, std_err = linregress(df[x_col], df[col])
+                    reg_line = slope * df[x_col] + intercept
+                    fig.add_trace(go.Scatter(
+                        x=df[x_col],
+                        y=reg_line,
+                        mode="lines",
+                        name=f"회귀선 ({col})",
+                        line=dict(color="#003366", dash="dot"),  # 진한 파란색으로 변경
+                        hoverinfo="skip"
+                    ))
+                    fig.add_annotation(
+                        xref="paper", yref="paper",
+                        x=0.98, y=0.98,
+                        text=f"<b>상관계수 r = {r_value:.2f}</b>",
+                        showarrow=False,
+                        font=dict(size=14, color="black"),
+                        bgcolor="rgba(255, 243, 211, 0.3)",  # 배경 투명도 30%
+                        bordercolor="#666",
+                        borderwidth=1,
+                        borderpad=6
+                    )
 
         fig.update_layout(
             title=dict(text=graph_title, x=0.5, y=0.95, font=dict(size=24)),
