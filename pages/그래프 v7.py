@@ -47,11 +47,9 @@ if uploaded_file:
         y_selected = []
         for col in df.columns:
             if col != x_col:
-                st.markdown(f"<div class='checkbox-container'>", unsafe_allow_html=True)
                 if st.checkbox(col, key=f"y_{col}"):
                     y_selected.append(col)
-                st.markdown("</div>", unsafe_allow_html=True)
-
+    
     with col2:
         use_dual_y = st.checkbox("▶ y축 2개로 나누기 (좌/우)", value=False)
         chart_type = st.radio("▶ 그래프 형태", ["꺾은선 그래프", "산점도", "막대그래프"], horizontal=True)
