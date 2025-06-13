@@ -14,16 +14,11 @@ st.markdown("""
         border: 1px solid #a2d5f2;
         padding: 0.5rem;
     }
-    .scroll-box {
-        height: 150px;
-        overflow-y: auto;
-        border: 1px solid #e0e0e0;
-        padding: 10px;
-        background-color: #f9f9ff;
-        border-radius: 8px;
-    }
     .checkbox-container {
         margin-bottom: 5px;
+        background-color: #f9f9ff;
+        border-radius: 8px;
+        padding: 5px;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -47,16 +42,12 @@ if uploaded_file:
     with col1:
         st.markdown("✔️ y축에 사용할 열 (최대 2개)")
         y_selected = []
-        scroll_html_start = """<div class='scroll-box'>"""
-        scroll_html_end = """</div>"""
-        st.markdown(scroll_html_start, unsafe_allow_html=True)
         for col in df.columns:
             if col != x_col:
                 st.markdown(f"<div class='checkbox-container'>", unsafe_allow_html=True)
                 if st.checkbox(col, key=f"y_{col}"):
                     y_selected.append(col)
                 st.markdown("</div>", unsafe_allow_html=True)
-        st.markdown(scroll_html_end, unsafe_allow_html=True)
 
     with col2:
         use_dual_y = st.checkbox("▶ y축 2개로 나누기 (좌/우)", value=False)
@@ -127,3 +118,4 @@ if uploaded_file:
         )
     else:
         st.info("y축으로 사용할 데이터를 하나 이상 선택해주세요.")
+
