@@ -15,10 +15,13 @@ st.markdown("""
         padding: 0.5rem;
     }
     .checkbox-container {
-        margin-bottom: 5px;
         background-color: #f9f9ff;
         border-radius: 8px;
         padding: 5px;
+        margin-bottom: 8px;
+    }
+    .checkbox-container > div {
+        background: none !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -66,6 +69,10 @@ if uploaded_file:
 
     if y_selected:
         fig = go.Figure()
+        total = len(df[x_col])
+        bar_width = 0.4 / max(1, len(y_selected)) if chart_type == "막대그래프" else None
+        offsets = [-bar_width/2, bar_width/2] if len(y_selected) == 2 else [0]
+
         for i, col in enumerate(y_selected):
             yaxis = "y2" if use_dual_y and i == 1 else "y"
             mode = "lines+markers" if chart_type == "꺾은선 그래프" else "markers"
@@ -76,6 +83,7 @@ if uploaded_file:
                     name=col,
                     marker_color=pastel_colors[i % len(pastel_colors)],
                     yaxis=yaxis,
+                    offsetgroup=str(i),
                     hovertemplate=f"{col}: %{{y}} {extract_unit(col)}<extra></extra>"
                 ))
             else:
@@ -118,4 +126,3 @@ if uploaded_file:
         )
     else:
         st.info("y축으로 사용할 데이터를 하나 이상 선택해주세요.")
-
