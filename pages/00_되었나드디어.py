@@ -4,6 +4,7 @@ import plotly.graph_objects as go
 import io
 from PIL import Image
 import numpy as np  # 회귀선 계산용
+from math import ceil
 
 # 전체 영역 스타일: 가로 60%, 가운데 정렬
 st.markdown("""
@@ -41,27 +42,29 @@ if uploaded_file:
 
     st.subheader("3️⃣ y축 데이터 및 옵션")
     col1, col2 = st.columns(2)
+    
 
-from math import ceil
 
     with col1:
-        st.markdown("✔️ y축에 사용할 열을 선택 (최대 2개)")
-
-        y_selected = []
-        selectable_cols = [col for col in df.columns if col != x_col]
-        num_cols = 3
-        num_rows = ceil(len(selectable_cols) / num_cols)
-
-        col_objs = st.columns(num_cols)
-
-        for i in range(num_rows):
-            for j in range(num_cols):
-                idx = i + j * num_rows  # 세로 우선으로 배치 (1열 5행 → 2열 5행)
-                if idx < len(selectable_cols):
-                    col_name = selectable_cols[idx]
-                    with col_objs[j]:
-                        if st.checkbox(col_name, key=f"y_{col_name}"):
-                            y_selected.append(col_name)
+        st.markdown("✔️ y축에 사용할 열을 선택 (최대 2개)") # y축 열 선택 (체크박스를 3열 5행으로 표시)
+        
+		y_selected = []
+		y_candidates = [col for col in df.columns if col != x_col]
+		columns_per_row = 3
+		rows_per_col = 5
+		total_slots = columns_per_row * rows_per_col
+		
+		# 부족하면 빈칸 채우기
+		padded_cols = y_candidates + [""] * (total_slots - len(y_candidates))
+		grid = [padded_cols[i::rows_per_col] for i in range(rows_per_col)]
+		
+		checkbox_cols = st.columns(columns_per_row)
+		
+		for row in grid:
+		    for col_idx, col in enumerate(row):
+		        if col:  # 빈칸은 건너뜀
+		            if checkbox_cols[col_idx].checkbox(col, key=f"y_{col}"):
+		                y_selected.append(col)
 
 
     with col2:
