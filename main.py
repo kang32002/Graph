@@ -2,31 +2,42 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# 제목
-st.title("학생 건강검사 결과 산점도 시각화")
+st.title("CSV 파일을 이용한 2차원 산점도 시각화")
 
-# CSV 파일 불러오기
-csv_file = "교육부_학생건강검사 결과_20151201.csv"
-df = pd.read_csv(csv_file, encoding='utf-8')  # encoding이 다를 경우 cp949로 시도
+# 파일 업로드
+uploaded_file = st.file_uploader("CSV 파일을 업로드하세요", type=["csv"])
 
-# 데이터 미리보기
-st.subheader("데이터 미리보기")
-st.write(df.head())
+if uploaded_file is not None:
+    try:
+        # CSV 파일 읽기 (인코딩 자동 감지 시도)
+        try:
+            df = pd.read_csv(uploaded_file)
+        except UnicodeDecodeError:
+            df = pd.read_csv(uploaded_file, encoding='cp949')  # 한글 파일용 예외 처리
 
-# 선택할 수 있는 열 목록 필터링 (숫자형 데이터만 선택)
-numeric_cols = df.select_dtypes(include=['float64', 'int64']).columns.tolist()
+        st.subheader("데이터 미리보기")
+        st.write(df.head())
 
-# 사용자 입력 - X, Y축 선택
-st.subheader("산점도 축 선택")
-x_axis = st.selectbox("X축 선택", numeric_cols)
-y_axis = st.selectbox("Y축 선택", numeric_cols)
+        # 숫자형 컬럼만 선택
+        numeric_cols = df.select_dtypes(include=['float64', 'int64']).columns.tolist()
 
-# 산점도 그리기
-if x_axis and y_axis:
-    st.subheader(f"산점도: {x_axis} vs {y_axis}")
-    fig, ax = plt.subplots()
-    ax.scatter(df[x_axis], df[y_axis], alpha=0.5)
-    ax.set_xlabel(x_axis)
-    ax.set_ylabel(y_axis)
-    ax.set_title(f"{x_axis} vs {y_axis} 산점도")
-    st.pyplot(fig)
+        if len(numeric_cols) < 2:
+            st.warning("산점도를 그리기 위해 최소 두 개의 숫자형 열이 필요합니다.")
+        else:
+            # X축, Y축 선택
+            x_axis = st.selectbox("X축 선택", numeric_cols)
+            y_axis = st.selectbox("Y축 선택", numeric_cols, index=1 if len(numeric_cols) > 1 else 0)
+
+            # 산점도 그리기
+            st.subheader(f"산점도: {x_axis} vs {y_axis}")
+            fig, ax = plt.subplots()
+            ax.scatter(df[x_axis], df[y_axis], alpha=0.6)
+            ax.set_xlabel(x_axis)
+            ax.set_ylabel(y_axis)
+            ax.set_title(f"{x_axis} vs {y_axis} 산점도")
+            st.pyplot(fig)
+
+    except Exception as e:
+        st.error(f"파일을 읽는 중 오류가 발생했습니다: {e}")
+else:
+    st.info("좌측에서 CSV 파일을 업로드해 주세요.")
