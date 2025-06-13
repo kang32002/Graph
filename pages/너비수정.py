@@ -117,12 +117,12 @@ if uploaded_file:
                 if show_corr and len(y_selected) == 1:
                     corr_val = df[[x_col, col]].corr().iloc[0, 1]
                     fig.add_annotation(
-                        text=f"<b>📊 상관계수<br>r = {corr_val:.2f}</b>",
+                        text=f"<b>상관계수<br>r = {corr_val:.2f}</b>",
                         xref="paper", yref="paper",
                         x=0.95, y=0.95, showarrow=False,
                         font=dict(size=16, color="#222222"),
                         align="center",
-                        bgcolor="rgba(255, 255, 255, 0.8)",
+                        bgcolor="rgba(255, 255, 255, 0.5)",
                         bordercolor="#cccccc",
                         borderwidth=2,
                         borderpad=10
