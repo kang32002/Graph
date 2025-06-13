@@ -82,14 +82,14 @@ if uploaded_file:
                     y=df[col],
                     mode=mode,
                     name=col,
-                    marker=dict(color=pastel_colors[i % len(pastel_colors)], size=8),
+                    marker=dict(color=pastel_colors[i % len(pastel_colors)], size=8, opacity=0.6),  # 산점도 반투명도 적
                     line=dict(color=pastel_colors[i % len(pastel_colors)], width=2),
                     yaxis=yaxis,
                     hovertemplate=f"{col}: %{{y}} {extract_unit(col)}<extra></extra>"
                 ))
 
         layout_args = dict(
-            title=dict(text=graph_title, x=0.5, y=0.95, font=dict(size=24)),
+            title=dict(text=graph_title, x=0.5, xanchor="center", y=0.95, font=dict(size=24)), # 제목 중앙 정렬
             xaxis_title=x_col,
             yaxis_title=y_selected[0],
             legend=dict(orientation="h", yanchor="bottom", y=-0.3, xanchor="center", x=0.5),
