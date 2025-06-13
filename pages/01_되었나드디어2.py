@@ -79,58 +79,73 @@ if uploaded_file:
         match = re.search(r"\((.*?)\)", col_name)
         return match.group(1) if match else ""
 
-    if y_selected:
+if y_selected:
         fig = go.Figure()
 
         for i, col in enumerate(y_selected):
             yaxis = "y2" if use_dual_y and i == 1 else "y"
             mode = "lines+markers" if chart_type == "꺾은선 그래프" else "markers"
-            color = pastel_colors[i % len(pastel_colors)]
 
             if chart_type == "막대그래프":
                 fig.add_trace(go.Bar(
                     x=df[x_col],
                     y=df[col],
                     name=col,
-                    marker_color=color,
+                    marker_color=pastel_colors[i % len(pastel_colors)],
                     yaxis=yaxis,
                     offsetgroup=str(i),
                     hovertemplate=f"{col}: %{{y}} {extract_unit(col)}<extra></extra>"
                 ))
+            elif chart_type == "산점도":
+                fig.add_trace(go.Scatter(
+                    x=df[x_col],
+                    y=df[col],
+                    mode=mode,
+                    name=col,
+                    marker=dict(color=pastel_colors[i % len(pastel_colors)], size=8, opacity=0.6),
+                    yaxis=yaxis,
+                    hovertemplate=f"{col}: %{{y}} {extract_unit(col)}<extra></extra>"
+                ))
+
+                # 회귀선 추가
+                if show_regression and len(y_selected) == 1:
+                    x_vals = df[x_col].dropna()
+                    y_vals = df[col].dropna()
+                    if x_vals.shape[0] == y_vals.shape[0] and x_vals.shape[0] > 1:
+                        coeffs = np.polyfit(x_vals, y_vals, deg=1)
+                        reg_line = coeffs[0] * x_vals + coeffs[1]
+                        fig.add_trace(go.Scatter(
+                            x=x_vals,
+                            y=reg_line,
+                            mode="lines",
+                            name="회귀선",
+                            line=dict(color="#0044cc", dash="dash")  # 진한 파랑
+                        ))
+
+                # 상관계수 표시
+                if show_corr and len(y_selected) == 1:
+                    corr_val = df[[x_col, col]].corr().iloc[0, 1]
+                    fig.add_annotation(
+                        text=f"상관계수 (r) = {corr_val:.2f}",
+                        xref="paper", yref="paper",
+                        x=0.95, y=0.95, showarrow=False,
+                        font=dict(size=14, color="#222222"),  # 진한 회색
+                        align="right",
+                        bgcolor="rgba(255, 255, 255, 0.9)",
+                        bordercolor="#999999",
+                        borderwidth=1
+                    )
             else:
                 fig.add_trace(go.Scatter(
                     x=df[x_col],
                     y=df[col],
                     mode=mode,
                     name=col,
-                    marker=dict(color=color, size=8, opacity=0.6 if chart_type == "산점도" else 1),
-                    line=dict(color=color, width=2),
+                    marker=dict(color=pastel_colors[i % len(pastel_colors)], size=8),
+                    line=dict(color=pastel_colors[i % len(pastel_colors)], width=2),
                     yaxis=yaxis,
                     hovertemplate=f"{col}: %{{y}} {extract_unit(col)}<extra></extra>"
                 ))
-
-                if chart_type == "산점도" and show_regression and i == 0:
-                    slope, intercept, r_value, p_value, std_err = linregress(df[x_col], df[col])
-                    reg_line = slope * df[x_col] + intercept
-                    fig.add_trace(go.Scatter(
-                        x=df[x_col],
-                        y=reg_line,
-                        mode="lines",
-                        name=f"회귀선 ({col})",
-                        line=dict(color="black", dash="dot"),
-                        hoverinfo="skip"
-                    ))
-                    fig.add_annotation(
-                        xref="paper", yref="paper",
-                        x=0.98, y=0.98,
-                        text=f"<b>상관계수 r = {r_value:.2f}</b>",
-                        showarrow=False,
-                        font=dict(size=14, color="black"),
-                        bgcolor="#FFF3D3",
-                        bordercolor="#666",
-                        borderwidth=1,
-                        borderpad=6
-                    )
 
         fig.update_layout(
             title=dict(text=graph_title, x=0.5, y=0.95, font=dict(size=24)),
