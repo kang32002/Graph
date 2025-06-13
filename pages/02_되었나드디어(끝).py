@@ -1,10 +1,10 @@
+import os
 import pandas as pd
 import streamlit as st
 import plotly.graph_objects as go
 from scipy.stats import linregress
-import os
 
-# 🌟 스타일 지정
+# 스타일
 st.markdown("""
     <style>
     .main .block-container {
@@ -51,7 +51,6 @@ if uploaded_file:
         grid = [padded_cols[i*columns_per_row:(i+1)*columns_per_row] for i in range(rows)]
 
         checkbox_cols = st.columns(columns_per_row)
-
         for row in grid:
             for col_idx, col in enumerate(row):
                 if col:
@@ -148,7 +147,7 @@ if uploaded_file:
 
         st.plotly_chart(fig, use_container_width=True)
 
-        import kaleido  # pip install kaleido
+        import kaleido
         img_bytes = fig.to_image(format="png", engine="kaleido", width=1000, height=600)
         st.download_button(
             label="📅 그래프 PNG로 저장하기",
@@ -159,7 +158,7 @@ if uploaded_file:
     else:
         st.info("y축으로 사용할 데이터를 하나 이상 선택해주세요.")
 
-# ✅ 4. 분석 의견 작성
+# 의견 기능 시작
 st.subheader("4️⃣ 📬 분석 의견을 남겨주세요")
 opinion_file = "opinions.csv"
 
@@ -173,56 +172,49 @@ submit_button = st.button("✏️ 의견 등록")
 
 if submit_button and user_name.strip() and user_opinion.strip():
     from datetime import datetime
-    import pytz
-    kst = pytz.timezone('Asia/Seoul')
-    now_kst = datetime.now(kst)
-
     new_entry = pd.DataFrame([{
-        "작성시간": now_kst.strftime("%Y-%m-%d %H:%M:%S"),
+        "작성시간": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "이름": user_name.strip(),
         "의견": user_opinion.strip()
     }])
-
     if os.path.exists(opinion_file):
         old_data = pd.read_csv(opinion_file)
         all_data = pd.concat([old_data, new_entry], ignore_index=True)
     else:
         all_data = new_entry
-
     all_data.to_csv(opinion_file, index=False)
     st.success("의견이 성공적으로 등록되었습니다!")
 elif submit_button:
     st.warning("이름과 의견을 모두 입력해주세요.")
 
-# ✅ 등록된 의견 출력 및 삭제
+# 의견 보여주기 + 삭제 확인
 if os.path.exists(opinion_file):
     st.markdown("### 💬 등록된 의견 (최신순)")
     opinion_data = pd.read_csv(opinion_file)
     opinion_data = opinion_data[::-1].reset_index(drop=True)
 
-    if "delete_index" not in st.session_state:
-        st.session_state.delete_index = None
-
-    if "confirm_delete" not in st.session_state:
-        st.session_state.confirm_delete = None
+    if "pending_delete_index" not in st.session_state:
+        st.session_state.pending_delete_index = None
 
     for i, row in opinion_data.iterrows():
         with st.container():
             st.markdown(f"**🧑‍💼 {row['이름']}** ({row['작성시간']})")
             st.markdown(f"> {row['의견']}")
 
-            if st.session_state.confirm_delete == i:
-                col_c1, col_c2 = st.columns([1, 2])
-                with col_c1:
-                    if st.button("✅ 예, 삭제", key=f"confirm_yes_{i}"):
+            if st.session_state.pending_delete_index == i:
+                col_del1, col_del2 = st.columns([1, 2])
+                with col_del1:
+                    if st.button("✅ 예, 삭제", key=f"confirm_{i}"):
                         opinion_data.drop(i, inplace=True)
                         opinion_data[::-1].to_csv(opinion_file, index=False)
+                        st.session_state.pending_delete_index = None
                         st.success("의견이 삭제되었습니다.")
-                        st.session_state.confirm_delete = None
-                        st.experimental_rerun()
-                with col_c2:
-                    if st.button("❌ 아니오", key=f"confirm_no_{i}"):
-                        st.session_state.confirm_delete = None
+                        st.rerun()
+                with col_del2:
+                    if st.button("❌ 취소", key=f"cancel_{i}"):
+                        st.session_state.pending_delete_index = None
+                        st.rerun()
             else:
                 if st.button("🗑️ 삭제", key=f"delete_{i}"):
-                    st.session_state.confirm_delete = i
+                    st.session_state.pending_delete_index = i
+                    st.rerun()
