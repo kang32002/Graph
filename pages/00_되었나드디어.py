@@ -1,9 +1,6 @@
 import pandas as pd
 import streamlit as st
 import plotly.graph_objects as go
-import io
-from PIL import Image
-import numpy as np
 from scipy.stats import linregress
 
 # 스타일: 전체 영역을 가운데 3/5로 제한 + 입력창/체크박스 개선
@@ -46,12 +43,17 @@ if uploaded_file:
         st.markdown("✔️ y축에 사용할 열을 선택 (최대 2개)")
         y_selected = []
         y_candidates = [col for col in df.columns if col != x_col]
+        
         columns_per_row = 3
         rows_per_col = 5
         total_slots = columns_per_row * rows_per_col
+        
+        # 행 우선 순서로 3열 5행 grid 생성 (빈칸으로 패딩)
         padded_cols = y_candidates + [""] * (total_slots - len(y_candidates))
-        grid = [padded_cols[i::rows_per_col] for i in range(rows_per_col)]
+        grid = [padded_cols[i*columns_per_row:(i+1)*columns_per_row] for i in range(rows_per_col)]
+        
         checkbox_cols = st.columns(columns_per_row)
+        
         for row in grid:
             for col_idx, col in enumerate(row):
                 if col:
@@ -72,7 +74,7 @@ if uploaded_file:
 
     def extract_unit(col_name):
         import re
-        match = re.search(r"\\((.*?)\\)", col_name)
+        match = re.search(r"\((.*?)\)", col_name)
         return match.group(1) if match else ""
 
     if y_selected:
@@ -82,7 +84,7 @@ if uploaded_file:
             yaxis = "y2" if use_dual_y and i == 1 else "y"
             mode = "lines+markers" if chart_type == "꺾은선 그래프" else "markers"
             color = pastel_colors[i % len(pastel_colors)]
-            
+
             if chart_type == "막대그래프":
                 fig.add_trace(go.Bar(
                     x=df[x_col],
@@ -104,7 +106,7 @@ if uploaded_file:
                     yaxis=yaxis,
                     hovertemplate=f"{col}: %{{y}} {extract_unit(col)}<extra></extra>"
                 ))
-                
+
                 if chart_type == "산점도" and show_regression and i == 0:
                     slope, intercept, r_value, p_value, std_err = linregress(df[x_col], df[col])
                     reg_line = slope * df[x_col] + intercept
@@ -122,8 +124,8 @@ if uploaded_file:
                         text=f"<b>상관계수 r = {r_value:.2f}</b>",
                         showarrow=False,
                         font=dict(size=14, color="black"),
-                        bgcolor="#FFFAE3",
-                        bordercolor="#000000",
+                        bgcolor="#FFF3D3",
+                        bordercolor="#666",
                         borderwidth=1,
                         borderpad=6
                     )
