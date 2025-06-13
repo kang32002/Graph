@@ -4,12 +4,9 @@ import plotly.graph_objects as go
 import io
 from PIL import Image
 
-# 스타일: 파스텔톤 배경, 흰색 텍스트박스, 대비 개선
+# 스타일: 파스텔톤 입력창 및 체크박스
 st.markdown("""
     <style>
-    body {
-        background-color: #ffffff !important;
-    }
     input[type="text"] {
         background-color: #f0f4ff !important;
         color: #333333 !important;
@@ -42,7 +39,7 @@ if uploaded_file:
     col1, col2 = st.columns(2)
 
     with col1:
-        st.markdown("✔️ y축에 사용할 열(2개까지 선택 가능)")
+        st.markdown("✔️ y축에 사용할 열 (최대 2개)")
         y_selected = []
         for col in df.columns:
             if col != x_col:
@@ -88,15 +85,14 @@ if uploaded_file:
             legend=dict(orientation="h", yanchor="bottom", y=-0.3, xanchor="center", x=0.5),
             height=500,
             width=900,
-            margin=dict(t=80, b=100),
-            plot_bgcolor="#ffffff",
-            paper_bgcolor="#ffffff",
+            margin=dict(t=80, b=100)
+            # 배경색 관련 옵션 제거됨
         )
 
         st.plotly_chart(fig, use_container_width=True)
 
         # PNG 저장 기능
-        import kaleido  # 주의: 반드시 pip install kaleido 필요
+        import kaleido  # pip install kaleido 필요
         img_bytes = fig.to_image(format="png", engine="kaleido", width=1000, height=600)
         st.download_button(
             label="📥 그래프 PNG로 저장하기",
