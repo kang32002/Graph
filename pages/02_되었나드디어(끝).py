@@ -163,13 +163,19 @@ import os
 st.subheader("4️⃣ 📬 분석 의견을 남겨주세요")
 opinion_file = "opinions.csv"
 
-user_opinion = st.text_area("여기에 분석 의견을 입력하세요. (예: 상관관계 해석, 데이터 특이사항 등)", height=100)
+col1, col2 = st.columns([1, 3])
+with col1:
+    user_name = st.text_input("이름", max_chars=20)
+with col2:
+    user_opinion = st.text_area("분석 의견 (예: 상관관계 해석, 데이터 특이사항 등)", height=100)
+
 submit_button = st.button("✏️ 의견 등록")
 
-if submit_button and user_opinion.strip():
+if submit_button and user_name.strip() and user_opinion.strip():
     from datetime import datetime
     new_entry = pd.DataFrame([{
         "작성시간": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "이름": user_name.strip(),
         "의견": user_opinion.strip()
     }])
 
@@ -181,11 +187,24 @@ if submit_button and user_opinion.strip():
 
     all_data.to_csv(opinion_file, index=False)
     st.success("의견이 성공적으로 등록되었습니다!")
+elif submit_button:
+    st.warning("이름과 의견을 모두 입력해주세요.")
 
-# 저장된 의견 보여주기
+# 저장된 의견 보여주기 및 삭제 기능
 if os.path.exists(opinion_file):
-    st.markdown("### 💬 등록된 다른 사람들의 의견")
+    st.markdown("### 💬 등록된 의견 (최신순)")
     opinion_data = pd.read_csv(opinion_file)
-    st.dataframe(opinion_data[::-1], use_container_width=True)  # 최신순으로 보여주기
+    opinion_data = opinion_data[::-1].reset_index(drop=True)
+
+    for i, row in opinion_data.iterrows():
+        with st.container():
+            st.markdown(f"**🧑‍💼 {row['이름']}** ({row['작성시간']})")
+            st.markdown(f"> {row['의견']}")
+            delete_key = f"delete_{i}"
+            if st.button("🗑️ 삭제", key=delete_key):
+                opinion_data.drop(i, inplace=True)
+                opinion_data[::-1].to_csv(opinion_file, index=False)  # 저장은 다시 최신순으로
+                st.success("의견이 삭제되었습니다.")
+                st.experimental_rerun()
 else:
     st.info("아직 등록된 의견이 없습니다.")
