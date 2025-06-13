@@ -2,6 +2,7 @@ import pandas as pd
 import streamlit as st
 import plotly.graph_objects as go
 from scipy.stats import linregress
+import numpy as np  # 추가
 
 # 스타일: 전체 영역을 가운데 3/5로 제한 + 입력창/체크박스 개선
 st.markdown("""
@@ -48,8 +49,6 @@ if uploaded_file:
         total_slots = len(y_candidates)
         
         # 2열로 행 제한 없이 행 우선으로 나누기
-        # 즉, 리스트를 2개씩 나누어 각 열에 넣기
-        # 각 열은 y_candidates를 행 우선으로 나눈 것
         col_groups = [y_candidates[i::columns_per_row] for i in range(columns_per_row)]
         
         checkbox_cols = st.columns(columns_per_row)
@@ -79,7 +78,7 @@ if uploaded_file:
         match = re.search(r"\((.*?)\)", col_name)
         return match.group(1) if match else ""
 
-if y_selected:
+    if y_selected:
         fig = go.Figure()
 
         for i, col in enumerate(y_selected):
@@ -119,17 +118,17 @@ if y_selected:
                             y=reg_line,
                             mode="lines",
                             name="회귀선",
-                            line=dict(color="#0044cc", dash="dash")  # 진한 파랑
+                            line=dict(color="#0044cc", dash="dash")
                         ))
 
-                # 상관계수 표시
-                if show_corr and len(y_selected) == 1:
+                # 상관계수 표시 (show_corr → show_regression 변경)
+                if show_regression and len(y_selected) == 1:
                     corr_val = df[[x_col, col]].corr().iloc[0, 1]
                     fig.add_annotation(
                         text=f"상관계수 (r) = {corr_val:.2f}",
                         xref="paper", yref="paper",
                         x=0.95, y=0.95, showarrow=False,
-                        font=dict(size=14, color="#222222"),  # 진한 회색
+                        font=dict(size=14, color="#222222"),
                         align="right",
                         bgcolor="rgba(255, 255, 255, 0.9)",
                         bordercolor="#999999",
