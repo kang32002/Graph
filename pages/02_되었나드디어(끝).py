@@ -196,15 +196,22 @@ if os.path.exists(opinion_file):
     opinion_data = pd.read_csv(opinion_file)
     opinion_data = opinion_data[::-1].reset_index(drop=True)
 
+    # 삭제 버튼 클릭 상태 저장용 세션 변수
+    if "delete_index" not in st.session_state:
+        st.session_state.delete_index = None
+
     for i, row in opinion_data.iterrows():
         with st.container():
             st.markdown(f"**🧑‍💼 {row['이름']}** ({row['작성시간']})")
             st.markdown(f"> {row['의견']}")
             delete_key = f"delete_{i}"
             if st.button("🗑️ 삭제", key=delete_key):
-                opinion_data.drop(i, inplace=True)
-                opinion_data[::-1].to_csv(opinion_file, index=False)  # 저장은 다시 최신순으로
-                st.success("의견이 삭제되었습니다.")
-                st.experimental_rerun()
-else:
-    st.info("아직 등록된 의견이 없습니다.")
+                st.session_state.delete_index = i
+
+    # 삭제 인덱스가 존재하면 처리
+    if st.session_state.delete_index is not None:
+        opinion_data.drop(st.session_state.delete_index, inplace=True)
+        opinion_data[::-1].to_csv(opinion_file, index=False)
+        st.success("의견이 삭제되었습니다.")
+        st.session_state.delete_index = None  # 초기화
+        st.stop()  # rerun 없이 현재 스크립트만 중지 → 자연스럽게 앱 리렌더링
